@@ -9,11 +9,13 @@
 
 - [ ] 포트폴리오에 방명록(Supabase) 기능 추가
   - [x] 1. `supabase/messages_schema.sql` 작성 — `messages` 테이블(id, name, content, created_at) + RLS(누구나 읽기/쓰기)
-  - [x] 2. `config.example.js`(git 포함, 템플릿) + `config.js`(git 제외, 실제 키) 생성
-  - [x] 3. `.gitignore`에 `config.js` 추가
-  - [x] 4. `company_brief_gemini.html` 맨 아래에 방명록 폼 + 리스트 UI, Supabase JS 연동 스크립트 추가
-  - [ ] 5. 로컬에서 브라우저로 열어 실제 등록/조회 동작 확인 (사용자 확인 필요)
-  - [ ] 6. `tasks/progress.md`에 결과 기록
+  - [x] 2. `company_brief_gemini.html` 맨 아래에 방명록 폼 + 리스트 UI, Supabase JS 연동 스크립트 추가
+  - [x] 3. 첫 커밋 + 푸시 (config.js 파일 방식)
+  - [x] 4. Vercel 배포 확인 후 config.js 방식 → 서버리스 함수(`api/config.js`) + `.env.local`/`.env.example` 방식으로 전환
+  - [ ] 5. Vercel 대시보드에 SUPABASE_URL / SUPABASE_ANON_KEY 환경변수 등록 (사용자가 직접 — CLI 로그인 필요)
+  - [ ] 6. `vercel dev`로 로컬에서 실제 브라우저 동작 확인 (사용자 확인 필요)
+  - [ ] 7. 변경사항 커밋 + 푸시
+  - [ ] 8. `tasks/progress.md`에 결과 기록
 
 ## 완료
 

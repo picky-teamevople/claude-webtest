@@ -766,13 +766,20 @@
         </div>
     </footer>
 
-    <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        (function () {
-            const cfg = window.SUPABASE_CONFIG;
+        (async function () {
+            let cfg;
+            try {
+                const res = await fetch('/api/config');
+                cfg = await res.json();
+            } catch (e) {
+                console.error('/api/config 호출에 실패했습니다.', e);
+                return;
+            }
+
             if (!cfg || !cfg.url || !cfg.anonKey) {
-                console.error('config.js가 없거나 SUPABASE_CONFIG가 비어있습니다. config.example.js를 참고해 config.js를 만들어주세요.');
+                console.error('환경변수(SUPABASE_URL, SUPABASE_ANON_KEY)가 설정되지 않았습니다. .env.local(로컬) 또는 Vercel 프로젝트 환경변수(배포)를 확인해주세요.');
                 return;
             }
 
