@@ -7,6 +7,9 @@
 secrets/
 credentials.json
 
+# Supabase 연결 정보 (실제 키 포함, config.example.js를 참고해서 직접 생성)
+config.js
+
 # OS
 .DS_Store
 Thumbs.db

@@ -374,6 +374,110 @@
             color: var(--primary);
         }
 
+        /* 6. 방명록 섹션 */
+        .guestbook-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 600px;
+            margin: 0 auto 3rem auto;
+        }
+
+        .guestbook-form input,
+        .guestbook-form textarea {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 0.9rem 1.1rem;
+            color: var(--text-color);
+            font-size: 0.95rem;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .guestbook-form textarea {
+            min-height: 100px;
+        }
+
+        .guestbook-form input:focus,
+        .guestbook-form textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .guestbook-form button {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 10px;
+            padding: 0.9rem 1.5rem;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .guestbook-form button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .guestbook-error {
+            max-width: 600px;
+            margin: -0.5rem auto 2rem auto;
+            color: #ef4444;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .guestbook-list {
+            list-style: none;
+            max-width: 700px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .guestbook-item {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.2rem 1.5rem;
+        }
+
+        .guestbook-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0.5rem;
+            gap: 1rem;
+        }
+
+        .guestbook-item-name {
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .guestbook-item-date {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .guestbook-item-content {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            white-space: pre-line;
+            word-break: break-word;
+        }
+
+        .guestbook-empty {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
         /* 푸터 영역 */
         footer {
             background: #06070d;
@@ -631,6 +735,24 @@
         </div>
     </section>
 
+    <section id="guestbook">
+        <h2 class="section-title">방명록 <span>Guestbook</span></h2>
+        <p style="text-align: center; color: var(--text-muted); max-width: 700px; margin: -2rem auto 3rem auto; font-size: 1.05rem;">
+            자유롭게 이름과 메시지를 남겨주세요.
+        </p>
+
+        <form id="guestbook-form" class="guestbook-form">
+            <input type="text" id="guestbook-name" placeholder="이름" maxlength="50" required>
+            <textarea id="guestbook-content" placeholder="메시지를 남겨주세요" maxlength="500" required></textarea>
+            <button type="submit">등록하기</button>
+        </form>
+        <p id="guestbook-error" class="guestbook-error" style="display: none;"></p>
+
+        <ul id="guestbook-list" class="guestbook-list">
+            <li class="guestbook-empty">불러오는 중...</li>
+        </ul>
+    </section>
+
     <footer>
         <div class="footer-container">
             <div class="footer-logo">Team Evople</div>
@@ -643,6 +765,105 @@
             </div>
         </div>
     </footer>
+
+    <script src="config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        (function () {
+            const cfg = window.SUPABASE_CONFIG;
+            if (!cfg || !cfg.url || !cfg.anonKey) {
+                console.error('config.js가 없거나 SUPABASE_CONFIG가 비어있습니다. config.example.js를 참고해 config.js를 만들어주세요.');
+                return;
+            }
+
+            const client = supabase.createClient(cfg.url, cfg.anonKey);
+
+            const form = document.getElementById('guestbook-form');
+            const nameInput = document.getElementById('guestbook-name');
+            const contentInput = document.getElementById('guestbook-content');
+            const errorEl = document.getElementById('guestbook-error');
+            const listEl = document.getElementById('guestbook-list');
+            const submitBtn = form.querySelector('button[type="submit"]');
+
+            function escapeHtml(str) {
+                return str.replace(/[&<>"']/g, (c) => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                }[c]));
+            }
+
+            function formatDate(iso) {
+                return new Date(iso).toLocaleString('ko-KR', {
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit'
+                });
+            }
+
+            function showError(message) {
+                errorEl.textContent = message;
+                errorEl.style.display = 'block';
+            }
+
+            function renderMessages(messages) {
+                if (!messages || messages.length === 0) {
+                    listEl.innerHTML = '<li class="guestbook-empty">아직 작성된 메시지가 없습니다.</li>';
+                    return;
+                }
+                listEl.innerHTML = messages.map((m) => `
+                    <li class="guestbook-item">
+                        <div class="guestbook-item-header">
+                            <span class="guestbook-item-name">${escapeHtml(m.name)}</span>
+                            <span class="guestbook-item-date">${formatDate(m.created_at)}</span>
+                        </div>
+                        <div class="guestbook-item-content">${escapeHtml(m.content)}</div>
+                    </li>
+                `).join('');
+            }
+
+            async function loadMessages() {
+                const { data, error } = await client
+                    .from('messages')
+                    .select('id, name, content, created_at')
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+
+                if (error) {
+                    console.error(error);
+                    showError('메시지를 불러오는 중 오류가 발생했습니다.');
+                    return;
+                }
+                renderMessages(data);
+            }
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                errorEl.style.display = 'none';
+
+                const name = nameInput.value.trim();
+                const content = contentInput.value.trim();
+
+                if (!name || !content) {
+                    showError('이름과 메시지를 모두 입력해주세요.');
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                const { error } = await client.from('messages').insert({ name, content });
+                submitBtn.disabled = false;
+
+                if (error) {
+                    console.error(error);
+                    showError('등록 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+                    return;
+                }
+
+                nameInput.value = '';
+                contentInput.value = '';
+                loadMessages();
+            });
+
+            loadMessages();
+        })();
+    </script>
 
 </body>
 </html>
