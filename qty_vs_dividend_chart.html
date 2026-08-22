@@ -116,6 +116,8 @@
   .tooltip .tt-row { display: flex; align-items: center; gap: 6px; }
   .tooltip .tt-key { width: 10px; height: 2px; display: inline-block; }
   .tooltip .tt-val { font-weight: 700; margin-left: auto; padding-left: 14px; }
+  .tooltip .tt-row.tt-total { margin-top: 5px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,0.25); }
+  .tooltip .tt-row.tt-total .tt-key { background: transparent; }
   .toggle-btn {
     margin-top: 14px;
     font-size: 12.5px;
@@ -220,6 +222,7 @@
         <th>AI테크 배당금(원)</th>
         <th>200위클리 보유수량(주)</th>
         <th>200위클리 배당금(원)</th>
+        <th>총 배당금(원)</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -387,17 +390,18 @@
       const COLOR_AI = "#2a78d6";
       const COLOR_WEEKLY = "#eb6834";
       const rows = [
-        [COLOR_AI, "AI테크 보유수량", fmtQty(qtyAi[i])],
-        [COLOR_AI, "AI테크 배당금", fmtWon(divAi[i])],
-        [COLOR_WEEKLY, "200위클리 보유수량", fmtQty(qtyWeekly[i])],
-        [COLOR_WEEKLY, "200위클리 배당금", fmtWon(divWeekly[i])]
+        [COLOR_AI, "AI테크 보유수량", fmtQty(qtyAi[i]), false],
+        [COLOR_AI, "AI테크 배당금", fmtWon(divAi[i]), false],
+        [COLOR_WEEKLY, "200위클리 보유수량", fmtQty(qtyWeekly[i]), false],
+        [COLOR_WEEKLY, "200위클리 배당금", fmtWon(divWeekly[i]), false],
+        [null, "총 배당금 합계", fmtWon(divAi[i] + divWeekly[i]), true]
       ];
-      rows.forEach(([color, label, val]) => {
+      rows.forEach(([color, label, val, isTotal]) => {
         const row = document.createElement("div");
-        row.className = "tt-row";
+        row.className = "tt-row" + (isTotal ? " tt-total" : "");
         const key = document.createElement("span");
         key.className = "tt-key";
-        key.style.background = color;
+        if (color) key.style.background = color;
         row.appendChild(key);
         const labelEl = document.createElement("span");
         labelEl.textContent = label;
@@ -441,7 +445,7 @@
     // table view
     months.forEach((m, i) => {
       const tr = document.createElement("tr");
-      [m, fmtQty(qtyAi[i]), fmtWon(divAi[i]), fmtQty(qtyWeekly[i]), fmtWon(divWeekly[i])].forEach((val) => {
+      [m, fmtQty(qtyAi[i]), fmtWon(divAi[i]), fmtQty(qtyWeekly[i]), fmtWon(divWeekly[i]), fmtWon(divAi[i] + divWeekly[i])].forEach((val) => {
         const td = document.createElement("td");
         td.textContent = val;
         tr.appendChild(td);
