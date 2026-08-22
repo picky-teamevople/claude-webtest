@@ -217,8 +217,8 @@
       <tr>
         <th>월</th>
         <th>AI테크 보유수량(주)</th>
-        <th>200위클리 보유수량(주)</th>
         <th>AI테크 배당금(원)</th>
+        <th>200위클리 보유수량(주)</th>
         <th>200위클리 배당금(원)</th>
       </tr>
     </thead>
@@ -388,8 +388,8 @@
       const COLOR_WEEKLY = "#eb6834";
       const rows = [
         [COLOR_AI, "AI테크 보유수량", fmtQty(qtyAi[i])],
-        [COLOR_WEEKLY, "200위클리 보유수량", fmtQty(qtyWeekly[i])],
         [COLOR_AI, "AI테크 배당금", fmtWon(divAi[i])],
+        [COLOR_WEEKLY, "200위클리 보유수량", fmtQty(qtyWeekly[i])],
         [COLOR_WEEKLY, "200위클리 배당금", fmtWon(divWeekly[i])]
       ];
       rows.forEach(([color, label, val]) => {
@@ -441,7 +441,7 @@
     // table view
     months.forEach((m, i) => {
       const tr = document.createElement("tr");
-      [m, fmtQty(qtyAi[i]), fmtQty(qtyWeekly[i]), fmtWon(divAi[i]), fmtWon(divWeekly[i])].forEach((val) => {
+      [m, fmtQty(qtyAi[i]), fmtWon(divAi[i]), fmtQty(qtyWeekly[i]), fmtWon(divWeekly[i])].forEach((val) => {
         const td = document.createElement("td");
         td.textContent = val;
         tr.appendChild(td);
