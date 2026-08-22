@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>KODEX 200타겟위클리커버드콜 · 미국AI테크TOP10타겟커버드콜 — 월별 보유수량 vs 배당금</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --series-ai: #2a78d6;
+    --series-ai-soft: #9ec5f4;
+    --series-weekly: #eb6834;
+    --series-weekly-soft: #f5b596;
+    --ring: rgba(11,11,11,0.10);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 16px 48px;
+    background: var(--page);
+    font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans KR", sans-serif;
+    color: var(--text-primary);
+    display: flex;
+    justify-content: center;
+  }
+  .viz-root {
+    width: 100%;
+    max-width: 1120px;
+    background: var(--surface-1);
+    border: 1px solid var(--ring);
+    border-radius: 14px;
+    padding: 28px 28px 20px;
+  }
+  h1 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    line-height: 1.4;
+  }
+  .subnote {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0 0 16px;
+    line-height: 1.55;
+  }
+  .period-toggle {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .period-btn {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    background: none;
+    border: 1px solid var(--baseline);
+    border-radius: 999px;
+    padding: 6px 16px;
+    cursor: pointer;
+  }
+  .period-btn:hover { background: var(--grid); }
+  .period-btn.active {
+    background: var(--text-primary);
+    border-color: var(--text-primary);
+    color: #fff;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .swatch-line { width: 16px; height: 2px; border-radius: 1px; display: inline-block; }
+  .swatch-rect { width: 12px; height: 12px; border-radius: 2px; display: inline-block; opacity: 0.5; }
+  .chart-wrap { position: relative; }
+  svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .grid-line { stroke: var(--grid); stroke-width: 1; }
+  .baseline { stroke: var(--baseline); stroke-width: 1.2; }
+  .axis-label { fill: var(--text-secondary); font-size: 12px; }
+  .axis-title { fill: var(--text-secondary); font-size: 12px; }
+  .tick-label { fill: var(--text-secondary); font-size: 10.5px; }
+  .bar-ai { fill: var(--series-ai); opacity: 0.32; }
+  .bar-weekly { fill: var(--series-weekly); opacity: 0.32; }
+  .bar-ai.hover, .bar-weekly.hover { opacity: 0.55; }
+  .line-ai { fill: none; stroke: var(--series-ai); stroke-width: 2.4; }
+  .line-weekly { fill: none; stroke: var(--series-weekly); stroke-width: 2.4; }
+  .dot-ai { fill: var(--series-ai); }
+  .dot-weekly { fill: var(--series-weekly); }
+  .hit-target { fill: transparent; cursor: pointer; }
+  .crosshair { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; opacity: 0; }
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--text-primary);
+    color: #fff;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12.5px;
+    line-height: 1.6;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+    opacity: 0;
+    transform: translate(-50%, -100%);
+    transition: opacity 0.08s ease;
+    white-space: nowrap;
+    z-index: 5;
+  }
+  .tooltip .tt-month { color: #c3c2b7; font-size: 11.5px; margin-bottom: 4px; }
+  .tooltip .tt-row { display: flex; align-items: center; gap: 6px; }
+  .tooltip .tt-key { width: 10px; height: 2px; display: inline-block; }
+  .tooltip .tt-val { font-weight: 700; margin-left: auto; padding-left: 14px; }
+  .toggle-btn {
+    margin-top: 14px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    background: none;
+    border: 1px solid var(--baseline);
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+  }
+  .toggle-btn:hover { background: var(--grid); }
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    margin-top: 14px;
+    display: none;
+  }
+  table.data-table.show { display: table; }
+  table.data-table th, table.data-table td {
+    border-bottom: 1px solid var(--grid);
+    padding: 6px 8px;
+    text-align: right;
+    white-space: nowrap;
+  }
+  table.data-table th:first-child, table.data-table td:first-child { text-align: left; }
+  table.data-table thead th { color: var(--text-secondary); font-weight: 600; }
+  .disclaimer {
+    margin-top: 18px;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    border-top: 1px solid var(--grid);
+    padding-top: 12px;
+  }
+
+  /* 모바일(좁은 화면): SVG 글자를 억지로 줄이면 viewBox 축소와 겹쳐 더 안 보이게
+     되므로, 대신 차트를 원래 크기로 유지하고 가로 스크롤로 보게 합니다. */
+  .scroll-hint { display: none; font-size: 11px; color: var(--text-muted); margin: 4px 0 0; }
+  @media (max-width: 640px) {
+    body { padding: 12px 6px 32px; }
+    .viz-root { padding: 16px 14px 14px; border-radius: 10px; }
+    h1 { font-size: 15px; }
+    .subnote { font-size: 11.5px; }
+    .period-btn { font-size: 11.5px; padding: 5px 13px; }
+    .legend { font-size: 11px; gap: 10px 14px; }
+    .tooltip { font-size: 11px; padding: 8px 10px; }
+    .toggle-btn { font-size: 11.5px; padding: 5px 12px; }
+    table.data-table { font-size: 10.5px; }
+    table.data-table.show {
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    table.data-table.show thead,
+    table.data-table.show tbody { display: table; width: 100%; }
+    .disclaimer { font-size: 10.5px; }
+
+    .chart-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    #chartSvg {
+      width: 900px;   /* 고정폭 유지 — 글자가 읽을 수 없을 만큼 축소되는 것을 방지 */
+      max-width: none;
+      flex-shrink: 0;
+    }
+    .scroll-hint { display: block; }
+  }
+</style>
+</head>
+<body>
+<div class="viz-root">
+  <h1>KODEX 200타겟위클리커버드콜 · 미국AI테크TOP10타겟커버드콜 — 월별 보유수량 vs 배당금</h1>
+  <p class="subnote">왼쪽 축 = 보유수량(주), 오른쪽 축 = 배당금(원). 두 축은 서로 다른 단위이므로 선과 막대의 높이·교차를 직접 비교하는 지표는 아닙니다. 그래프에 마우스를 올리면 해당 월의 값을 모두 볼 수 있습니다.</p>
+
+  <div class="period-toggle" id="periodToggle">
+    <button class="period-btn" data-range="2025">2025년</button>
+    <button class="period-btn" data-range="2026">2026년</button>
+    <button class="period-btn active" data-range="all">전체</button>
+  </div>
+
+  <div class="legend">
+    <span class="legend-item"><span class="swatch-line" style="background:var(--series-ai)"></span>AI테크커버드콜 보유수량 (왼쪽 축)</span>
+    <span class="legend-item"><span class="swatch-line" style="background:var(--series-weekly)"></span>200위클리커버드콜 보유수량 (왼쪽 축)</span>
+    <span class="legend-item"><span class="swatch-rect" style="background:var(--series-ai)"></span>AI테크커버드콜 배당금 (오른쪽 축)</span>
+    <span class="legend-item"><span class="swatch-rect" style="background:var(--series-weekly)"></span>200위클리커버드콜 배당금 (오른쪽 축)</span>
+  </div>
+
+  <div class="chart-wrap" id="chartWrap">
+    <svg id="chartSvg" viewBox="0 0 1060 560" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+  <p class="scroll-hint">← 좌우로 스크롤하면 전체 기간을 볼 수 있어요 →</p>
+
+  <button class="toggle-btn" id="toggleTable">표로 보기</button>
+  <table class="data-table" id="dataTable">
+    <thead>
+      <tr>
+        <th>월</th>
+        <th>AI테크 보유수량(주)</th>
+        <th>200위클리 보유수량(주)</th>
+        <th>AI테크 배당금(원)</th>
+        <th>200위클리 배당금(원)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <p class="disclaimer">이 차트는 개인 투자 기록용으로 만든 것이며 특정 종목에 대한 투자 권유가 아닙니다. 보유수량은 토스증권 오픈API 체결내역(매수·매도)을 직접 계산한 값이고, 배당금은 배당내역을 직접 기록한 값입니다.</p>
+</div>
+
+<script>
+(function () {
+  const fullMonths = ["2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08",
+    "2025-09","2025-10","2025-11","2025-12",
+    "2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08"];
+
+  const fullQtyAi = [8500,2497,3145,3235,8112,8126,8141,8157,
+    7313,6979,6979,6979,
+    6979,6137,6138,6139,6140,6140,6140,6140];
+
+  const fullQtyWeekly = [0,0,0,0,0,981,1063,1388,
+    2373,2450,2452,2454,
+    2454,2754,2758,2761,2761,2761,2811,2811];
+
+  const fullDivAi = [0,928330,1161675,915255,362320,945264,892374,961729,
+    981444,950979,940881,957838,
+    967677,941751,773603,773004,833930,877731,827060,610940];
+
+  const fullDivWeekly = [0,0,0,0,0,147150,171143,187450,
+    376740,419938,480200,480592,
+    514672,598776,681848,706750,960828,983850,907953,772470];
+
+  const NS = "http://www.w3.org/2000/svg";
+  const W = 1060, H = 560;
+  const marginL = 64, marginR = 78, marginT = 20, marginB = 78;
+  const plotW = W - marginL - marginR;
+  const plotH = H - marginT - marginB;
+
+  const svg = document.getElementById("chartSvg");
+  const tooltip = document.getElementById("tooltip");
+  const wrap = document.getElementById("chartWrap");
+  const tbody = document.querySelector("#dataTable tbody");
+
+  function el(tag, attrs) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+  function fmtWon(v) { return v.toLocaleString("ko-KR") + "원"; }
+  function fmtQty(v) { return v.toLocaleString("ko-KR") + "주"; }
+
+  function filterByRange(range) {
+    if (range === "all") return { idx: fullMonths.map((_, i) => i) };
+    const idx = [];
+    fullMonths.forEach((m, i) => { if (m.startsWith(range)) idx.push(i); });
+    return { idx };
+  }
+
+  let state = { months: fullMonths, qtyAi: fullQtyAi, qtyWeekly: fullQtyWeekly, divAi: fullDivAi, divWeekly: fullDivWeekly };
+  let hideTooltip = () => {};
+
+  function render(range) {
+    const { idx } = filterByRange(range);
+    const months = idx.map(i => fullMonths[i]);
+    const qtyAi = idx.map(i => fullQtyAi[i]);
+    const qtyWeekly = idx.map(i => fullQtyWeekly[i]);
+    const divAi = idx.map(i => fullDivAi[i]);
+    const divWeekly = idx.map(i => fullDivWeekly[i]);
+    state = { months, qtyAi, qtyWeekly, divAi, divWeekly };
+
+    const n = months.length;
+    svg.innerHTML = "";
+    tbody.innerHTML = "";
+
+    const qtyMax = Math.max(...qtyAi, ...qtyWeekly) * 1.15;
+    const divMax = Math.max(...divAi, ...divWeekly) * 1.35;
+    const xStep = plotW / n;
+    const xAt = i => marginL + xStep * i + xStep / 2;
+    const yQty = v => marginT + plotH - (v / qtyMax) * plotH;
+    const yDiv = v => marginT + plotH - (v / divMax) * plotH;
+
+    // gridlines (left axis, 5 steps)
+    const steps = 5;
+    for (let s = 0; s <= steps; s++) {
+      const v = (qtyMax / steps) * s;
+      const y = yQty(v);
+      svg.appendChild(el("line", { x1: marginL, x2: W - marginR, y1: y, y2: y, class: "grid-line" }));
+      const t = el("text", { x: marginL - 10, y: y + 4, class: "tick-label", "text-anchor": "end" });
+      t.textContent = Math.round(v).toLocaleString("ko-KR");
+      svg.appendChild(t);
+    }
+    // right axis ticks (dividend, 만원 단위)
+    for (let s = 0; s <= steps; s++) {
+      const v = (divMax / steps) * s;
+      const y = yDiv(v);
+      const t = el("text", { x: W - marginR + 10, y: y + 4, class: "tick-label", "text-anchor": "start" });
+      t.textContent = Math.round(v / 10000).toLocaleString("ko-KR") + "만";
+      svg.appendChild(t);
+    }
+
+    // axis titles
+    const leftTitle = el("text", { x: 16, y: marginT + plotH / 2, class: "axis-title", "text-anchor": "middle" });
+    leftTitle.setAttribute("transform", `rotate(-90 16 ${marginT + plotH / 2})`);
+    leftTitle.textContent = "보유수량 (주)";
+    svg.appendChild(leftTitle);
+
+    const rightTitle = el("text", { x: W - 14, y: marginT + plotH / 2, class: "axis-title", "text-anchor": "middle" });
+    rightTitle.setAttribute("transform", `rotate(90 ${W - 14} ${marginT + plotH / 2})`);
+    rightTitle.textContent = "배당금 (원)";
+    svg.appendChild(rightTitle);
+
+    // baseline
+    svg.appendChild(el("line", { x1: marginL, x2: W - marginR, y1: marginT + plotH, y2: marginT + plotH, class: "baseline" }));
+
+    // x labels (every month, rotated)
+    months.forEach((m, i) => {
+      const label = m.slice(2).replace("-", ".");
+      const t = el("text", {
+        x: xAt(i), y: marginT + plotH + 18, class: "tick-label", "text-anchor": "end",
+        transform: `rotate(-45 ${xAt(i)} ${marginT + plotH + 18})`
+      });
+      t.textContent = label;
+      svg.appendChild(t);
+    });
+
+    // bars (dividend, right axis) — grouped
+    const barW = xStep * 0.32;
+    function drawBars(data, colorClass, offsetSign) {
+      data.forEach((v, i) => {
+        if (v <= 0) return;
+        const x = xAt(i) + offsetSign * (barW / 2 + 1);
+        const yTop = yDiv(v);
+        svg.appendChild(el("rect", {
+          x: x - barW / 2, y: yTop, width: barW, height: (marginT + plotH) - yTop,
+          class: colorClass, rx: 2, "data-i": i
+        }));
+      });
+    }
+    drawBars(divAi, "bar-ai", -1);
+    drawBars(divWeekly, "bar-weekly", 1);
+
+    // lines (quantity, left axis)
+    function pathFor(data, yFn) {
+      return data.map((v, i) => `${i === 0 ? "M" : "L"} ${xAt(i)} ${yFn(v)}`).join(" ");
+    }
+    svg.appendChild(el("path", { d: pathFor(qtyAi, yQty), class: "line-ai" }));
+    svg.appendChild(el("path", { d: pathFor(qtyWeekly, yQty), class: "line-weekly" }));
+
+    qtyAi.forEach((v, i) => svg.appendChild(el("circle", { cx: xAt(i), cy: yQty(v), r: 3, class: "dot-ai" })));
+    qtyWeekly.forEach((v, i) => svg.appendChild(el("circle", { cx: xAt(i), cy: yQty(v), r: 3, class: "dot-weekly" })));
+
+    // crosshair
+    const crosshair = el("line", { x1: 0, x2: 0, y1: marginT, y2: marginT + plotH, class: "crosshair" });
+    svg.appendChild(crosshair);
+
+    function showTooltip(i) {
+      crosshair.setAttribute("x1", xAt(i));
+      crosshair.setAttribute("x2", xAt(i));
+      crosshair.style.opacity = 1;
+
+      tooltip.innerHTML = "";
+      const monthEl = document.createElement("div");
+      monthEl.className = "tt-month";
+      monthEl.textContent = months[i] + " 요약";
+      tooltip.appendChild(monthEl);
+
+      const COLOR_AI = "#2a78d6";
+      const COLOR_WEEKLY = "#eb6834";
+      const rows = [
+        [COLOR_AI, "AI테크 보유수량", fmtQty(qtyAi[i])],
+        [COLOR_WEEKLY, "200위클리 보유수량", fmtQty(qtyWeekly[i])],
+        [COLOR_AI, "AI테크 배당금", fmtWon(divAi[i])],
+        [COLOR_WEEKLY, "200위클리 배당금", fmtWon(divWeekly[i])]
+      ];
+      rows.forEach(([color, label, val]) => {
+        const row = document.createElement("div");
+        row.className = "tt-row";
+        const key = document.createElement("span");
+        key.className = "tt-key";
+        key.style.background = color;
+        row.appendChild(key);
+        const labelEl = document.createElement("span");
+        labelEl.textContent = label;
+        row.appendChild(labelEl);
+        const valEl = document.createElement("span");
+        valEl.className = "tt-val";
+        valEl.textContent = val;
+        row.appendChild(valEl);
+        tooltip.appendChild(row);
+      });
+
+      const svgRect = svg.getBoundingClientRect();
+      const wrapRect = wrap.getBoundingClientRect();
+      const scale = svgRect.width / W;
+      const px = (xAt(i)) * scale + (svgRect.left - wrapRect.left);
+      const py = marginT * scale + (svgRect.top - wrapRect.top);
+      tooltip.style.left = px + "px";
+      tooltip.style.top = py + "px";
+      tooltip.style.opacity = 1;
+    }
+
+    hideTooltip = function () {
+      tooltip.style.opacity = 0;
+      crosshair.style.opacity = 0;
+    };
+
+    // hit targets — one per month column, full plot height
+    months.forEach((m, i) => {
+      const hit = el("rect", {
+        x: marginL + xStep * i, y: marginT, width: xStep, height: plotH, class: "hit-target"
+      });
+      hit.addEventListener("pointerenter", () => showTooltip(i));
+      hit.addEventListener("pointermove", () => showTooltip(i));
+      hit.addEventListener("pointerleave", hideTooltip);
+      hit.addEventListener("focus", () => showTooltip(i));
+      hit.addEventListener("blur", hideTooltip);
+      hit.setAttribute("tabindex", "0");
+      svg.appendChild(hit);
+    });
+
+    // table view
+    months.forEach((m, i) => {
+      const tr = document.createElement("tr");
+      [m, fmtQty(qtyAi[i]), fmtQty(qtyWeekly[i]), fmtWon(divAi[i]), fmtWon(divWeekly[i])].forEach((val) => {
+        const td = document.createElement("td");
+        td.textContent = val;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  // period toggle buttons
+  const periodBtns = Array.from(document.querySelectorAll(".period-btn"));
+  periodBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      periodBtns.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      hideTooltip();
+      render(btn.dataset.range);
+    });
+  });
+
+  const toggleBtn = document.getElementById("toggleTable");
+  const table = document.getElementById("dataTable");
+  toggleBtn.addEventListener("click", () => {
+    const showing = table.classList.toggle("show");
+    toggleBtn.textContent = showing ? "차트로 보기" : "표로 보기";
+  });
+
+  render("all");
+})();
+</script>
+</body>
+</html>
